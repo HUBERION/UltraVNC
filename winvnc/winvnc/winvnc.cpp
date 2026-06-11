@@ -902,21 +902,28 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine2
 				i += configfileskip; // was already extracted, just skip chars	
 				continue;
 			}
-			if (strncmp(&szCmdLine[i], winvncRunService, strlen(winvncRunService)) == 0)
+			if (strncmp(&szCmdLine[i], winvncRunServiceExternal, strlen(winvncRunServiceExternal)) == 0)
 			{
-				//Run as service
-				if (!Myinit(hInstance)) return return2(0);
-				settings->setRunningFromExternalService(true);
-				int return2value = WinVNCAppMain();
-				return return2(return2value);
+				//Run session management from an external LocalSystem process (no SCM)
+#ifndef SC_20
+				UltraVNCService::run_as_external_service();
+#endif
+				return return2(0);
 			}
-
 			if (strncmp(&szCmdLine[i], winvncRunServiceRdp, strlen(winvncRunServiceRdp)) == 0)
 			{
 				//Run as service
 				if (!Myinit(hInstance)) return return2(0);
 				settings->setRunningFromExternalService(true);
 				settings->setRunningFromExternalServiceRdp(true);
+				int return2value = WinVNCAppMain();
+				return return2(return2value);
+			}
+			if (strncmp(&szCmdLine[i], winvncRunService, strlen(winvncRunService)) == 0)
+			{
+				//Run as service
+				if (!Myinit(hInstance)) return return2(0);
+				settings->setRunningFromExternalService(true);
 				int return2value = WinVNCAppMain();
 				return return2(return2value);
 			}
