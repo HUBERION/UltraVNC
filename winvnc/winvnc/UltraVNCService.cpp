@@ -884,10 +884,14 @@ int UltraVNCService::run_as_external_service(void)
 
 	initConfigPath(service_name);
 
+	vnclog.Print(LL_STATE, VNCLOG("run_as_external_service: session manager started (config: %s)\n"), inifile);
+
 	SetConsoleCtrlHandler(ExternalServiceConsoleHandler, TRUE);
 
 	Restore_after_reboot();
 	monitorSessions();
+
+	vnclog.Print(LL_STATE, VNCLOG("run_as_external_service: session manager stopped\n"));
 
 	return 0;
 }
