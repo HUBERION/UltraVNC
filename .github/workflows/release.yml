@@ -19,6 +19,15 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
+      - name: Install vcpkg dependencies (x64-windows-static)
+        shell: pwsh
+        run: |
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install `
+            --triplet x64-windows-static `
+            --overlay-triplets=triplets `
+            --x-manifest-root=.
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" integrate install
+
       - name: Build winvnc Release|x64
         working-directory: winvnc
         run: |
@@ -68,6 +77,15 @@ jobs:
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
+
+      - name: Install vcpkg dependencies (x86-windows-static)
+        shell: pwsh
+        run: |
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install `
+            --triplet x86-windows-static `
+            --overlay-triplets=triplets `
+            --x-manifest-root=.
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" integrate install
 
       - name: Build winvnc Release|Win32
         working-directory: winvnc
