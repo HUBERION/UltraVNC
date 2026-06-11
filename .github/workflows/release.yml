@@ -1,0 +1,109 @@
+name: Build Release
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+  workflow_dispatch:
+
+jobs:
+  build-winvnc-x64:
+    name: Build winvnc Release x64
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build winvnc Release|x64
+        working-directory: winvnc
+        run: |
+          msbuild winvnc.sln /p:Configuration=Release /p:Platform=x64 /m /nologo /verbosity:minimal
+
+      - name: Collect Release artifacts
+        shell: pwsh
+        run: |
+          $outDir = "release-artifacts"
+          New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+
+          # winvnc.exe
+          $exe = Get-ChildItem -Recurse -Filter "winvnc.exe" |
+                   Where-Object { $_.FullName -match "x64[/\\]Release" } |
+                   Select-Object -First 1
+          if ($exe) { Copy-Item $exe.FullName $outDir }
+
+          # helper DLLs built alongside winvnc
+          foreach ($dll in @("vnchooks.dll","schook.dll","logging.dll",
+                             "authadmin.dll","authSSP.dll","ldapauth.dll",
+                             "ldapauth9x.dll","ldapauthnt4.dll",
+                             "MSLogonACL.dll","setcad.exe",
+                             "setpasswd.exe","createpassword.exe")) {
+            $f = Get-ChildItem -Recurse -Filter $dll |
+                   Where-Object { $_.FullName -match "x64[/\\]Release" } |
+                   Select-Object -First 1
+            if ($f) { Copy-Item $f.FullName $outDir }
+          }
+
+          Write-Host "Collected artifacts:"
+          Get-ChildItem $outDir | ForEach-Object { Write-Host "  $($_.Name)" }
+
+      - name: Upload Release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: winvnc-Release-x64
+          path: release-artifacts/
+          retention-days: 30
+
+  build-winvnc-x86:
+    name: Build winvnc Release Win32
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build winvnc Release|Win32
+        working-directory: winvnc
+        run: |
+          msbuild winvnc.sln /p:Configuration=Release /p:Platform=Win32 /m /nologo /verbosity:minimal
+
+      - name: Collect Release artifacts
+        shell: pwsh
+        run: |
+          $outDir = "release-artifacts"
+          New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+
+          $exe = Get-ChildItem -Recurse -Filter "winvnc.exe" |
+                   Where-Object { $_.FullName -match "Win32[/\\]Release|Release[/\\]Win32|\\Release\\" } |
+                   Where-Object { $_.FullName -notmatch "x64" } |
+                   Select-Object -First 1
+          if ($exe) { Copy-Item $exe.FullName $outDir }
+
+          foreach ($dll in @("vnchooks.dll","schook.dll","logging.dll",
+                             "authadmin.dll","authSSP.dll","ldapauth.dll",
+                             "ldapauth9x.dll","ldapauthnt4.dll",
+                             "MSLogonACL.dll","setcad.exe",
+                             "setpasswd.exe","createpassword.exe")) {
+            $f = Get-ChildItem -Recurse -Filter $dll |
+                   Where-Object { $_.FullName -notmatch "x64" } |
+                   Where-Object { $_.FullName -match "Win32[/\\]Release|Release[/\\]Win32|\\Release\\" } |
+                   Select-Object -First 1
+            if ($f) { Copy-Item $f.FullName $outDir }
+          }
+
+          Write-Host "Collected artifacts:"
+          Get-ChildItem $outDir | ForEach-Object { Write-Host "  $($_.Name)" }
+
+      - name: Upload Release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: winvnc-Release-Win32
+          path: release-artifacts/
+          retention-days: 30

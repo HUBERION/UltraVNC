@@ -49,7 +49,7 @@ typedef BOOLEAN(WINAPI* pWinStationQueryInformationW)(
 	);
 
 class UltraVNCService {
-	
+
 private:
 	static void WINAPI service_main(DWORD argc, LPTSTR* argv);
 	static void WINAPI control_handler(DWORD controlCode);
@@ -61,13 +61,14 @@ private:
 
 	static SERVICE_STATUS serviceStatus;
 	static SERVICE_STATUS_HANDLE serviceStatusHandle;
-	static char service_path[MAX_PATH];	
+	static char service_path[MAX_PATH];
 	static char* app_name;
 	static char cmdtext[256];
 	static char app_path[MAX_PATH];
 	static void monitorSessions();
 	static int kickrdp;
 	static bool IsShutdown;
+	static bool isRunningExternal;
 	static PROCESS_INFORMATION  ProcessInfo;
 	static HANDLE hEndSessionEvent;
 	static HANDLE hEvent;
@@ -89,12 +90,16 @@ private:
 	static BOOL SetTBCPrivileges(VOID);
 	static void wait_for_existing_process();
 	static bool IsSessionStillActive(int ID);
+	static void initConfigPath(const char* serviceName);
+	static bool isRunning();
 
 public:
 	UltraVNCService();
 	static int start_service(char* cmd);
 	static int install_service(void);
 	static int uninstall_service(void);
+	static int run_as_external_service(void);
+	static void requestShutdown() { IsShutdown = true; if (hEndSessionEvent) SetEvent(hEndSessionEvent); if (hEvent) SetEvent(hEvent); }
 
 	static BOOL CreateServiceSafeBootKey();	
 	static void Set_Safemode();

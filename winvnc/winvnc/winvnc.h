@@ -46,6 +46,7 @@ extern int WinVNCAppMain();
 const char winvncConfig[] = "-config";
 const char winvncRunService[]		= "-service_run";
 const char winvncRunServiceRdp[]		= "-service_rdp_run";
+const char winvncRunServiceExternal[]	= "-service_run_from_external";
 const char winvncPreConnect[]		="-preconnect";
 const char winvncStartService[]		= "-service";
 const char winvncRunAsUserApp[]		= "-run";

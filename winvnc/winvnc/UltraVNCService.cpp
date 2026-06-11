@@ -34,6 +34,7 @@ char UltraVNCService::app_path[MAX_PATH]{};
 int UltraVNCService::kickrdp = 0;
 PROCESS_INFORMATION  UltraVNCService::ProcessInfo{};
 bool UltraVNCService::IsShutdown = false;
+bool UltraVNCService::isRunningExternal = false;
 HANDLE UltraVNCService::hEndSessionEvent = NULL;
 HANDLE UltraVNCService::hEvent = NULL;
 int UltraVNCService::clear_console = 0;
@@ -148,55 +149,8 @@ void WINAPI UltraVNCService::service_main(DWORD argc, LPTSTR* argv) {
     serviceStatus.dwServiceSpecificExitCode=NO_ERROR;
     serviceStatus.dwCheckPoint=0;
     serviceStatus.dwWaitHint=0;
-	if (strcmp(argv[0], service_name) == NULL) {
-		strcpy_s(configfilename, "ultravnc.ini");
-	}
-	else
-	{
-		strcpy_s(configfilename, argv[0]);
-		strcat_s(configfilename, ".ini");
-	}
 
-	char programdataPath[MAX_PATH]{};
-	char programdataFolder[MAX_PATH]{};
-	char installFolder[MAX_PATH]{};
-	
-	// Get install folder
-	GetServiceExecutablePath(installFolder, MAX_PATH);
-	
-	// Check if running in portable mode
-	if (IsServicePortableMode(installFolder)) {
-		// Portable mode: Use install folder for config
-		strcpy_s(inifile, installFolder);
-		strcat_s(inifile, "\\");
-		strcat_s(inifile, configfilename);
-	}
-	else {
-		// Standard mode: Use ProgramData for shared configuration
-		// Get ProgramData path
-		SHGetFolderPathA(NULL, CSIDL_COMMON_APPDATA, NULL, 0, programdataPath);
-		
-		// Attempt to migrate from install folder to ProgramData
-		MigrateServiceIniToProgramData(installFolder, programdataPath, configfilename);
-		
-		// Build ProgramData INI path
-		strcpy_s(programdataFolder, programdataPath);
-		strcat_s(programdataFolder, SERVICE_CONFIG_SUBFOLDER);
-		strcpy_s(inifile, programdataFolder);
-		strcat_s(inifile, "\\");
-		strcat_s(inifile, configfilename);
-		
-		// Check if config exists, create folder if needed
-		std::ifstream file(inifile);
-		if (!file.good()) {
-			// Config doesn't exist, ensure directory exists
-			if (_mkdir(programdataFolder) != 0 && errno != EEXIST) {
-				// Failed to create directory, continue anyway
-			}
-		}
-	}
-
-	iniFileService.setIniFile(inifile);
+	initConfigPath(argv[0]);
 
     typedef SERVICE_STATUS_HANDLE (WINAPI * pfnRegisterServiceCtrlHandlerEx)(LPCTSTR, LPHANDLER_FUNCTION_EX, LPVOID);
     helper::DynamicFn<pfnRegisterServiceCtrlHandlerEx> pRegisterServiceCtrlHandlerEx("advapi32.dll","RegisterServiceCtrlHandlerExA");
@@ -849,6 +803,95 @@ void UltraVNCService::Restore_after_reboot()
 	}
 }
 
+void UltraVNCService::initConfigPath(const char* serviceName)
+{
+	if (strcmp(serviceName, service_name) == 0) {
+		strcpy_s(configfilename, "ultravnc.ini");
+	}
+	else {
+		strcpy_s(configfilename, serviceName);
+		strcat_s(configfilename, ".ini");
+	}
+
+	char programdataPath[MAX_PATH]{};
+	char programdataFolder[MAX_PATH]{};
+	char installFolder[MAX_PATH]{};
+
+	GetServiceExecutablePath(installFolder, MAX_PATH);
+
+	if (IsServicePortableMode(installFolder)) {
+		strcpy_s(inifile, installFolder);
+		strcat_s(inifile, "\\");
+		strcat_s(inifile, configfilename);
+	}
+	else {
+		SHGetFolderPathA(NULL, CSIDL_COMMON_APPDATA, NULL, 0, programdataPath);
+		MigrateServiceIniToProgramData(installFolder, programdataPath, configfilename);
+		strcpy_s(programdataFolder, programdataPath);
+		strcat_s(programdataFolder, SERVICE_CONFIG_SUBFOLDER);
+		strcpy_s(inifile, programdataFolder);
+		strcat_s(inifile, "\\");
+		strcat_s(inifile, configfilename);
+
+		std::ifstream file(inifile);
+		if (!file.good()) {
+			if (_mkdir(programdataFolder) != 0 && errno != EEXIST) {
+			}
+		}
+	}
+
+	iniFileService.setIniFile(inifile);
+}
+
+bool UltraVNCService::isRunning()
+{
+	if (isRunningExternal)
+		return !IsShutdown;
+	return !IsShutdown && serviceStatus.dwCurrentState == SERVICE_RUNNING;
+}
+
+static BOOL WINAPI ExternalServiceConsoleHandler(DWORD ctrlType) {
+	switch (ctrlType) {
+	case CTRL_C_EVENT:
+	case CTRL_BREAK_EVENT:
+	case CTRL_CLOSE_EVENT:
+	case CTRL_LOGOFF_EVENT:
+	case CTRL_SHUTDOWN_EVENT:
+		UltraVNCService::requestShutdown();
+		return TRUE;
+	}
+	return FALSE;
+}
+
+int UltraVNCService::run_as_external_service(void)
+{
+	SetDllDirectory(TEXT(""));
+	SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32);
+
+	typedef BOOL(WINAPI* pSetProcessMitigationPolicy_t)(PROCESS_MITIGATION_POLICY, PVOID, SIZE_T);
+	HMODULE hKernel32 = GetModuleHandleA("kernel32.dll");
+	if (hKernel32) {
+		pSetProcessMitigationPolicy_t pSetProcessMitigationPolicy = (pSetProcessMitigationPolicy_t)GetProcAddress(hKernel32, "SetProcessMitigationPolicy");
+		if (pSetProcessMitigationPolicy) {
+			PROCESS_MITIGATION_IMAGE_LOAD_POLICY policy = {};
+			policy.PreferSystem32Images = 1;
+			pSetProcessMitigationPolicy(ProcessImageLoadPolicy, &policy, sizeof(policy));
+		}
+	}
+
+	isRunningExternal = true;
+	IsShutdown = false;
+
+	initConfigPath(service_name);
+
+	SetConsoleCtrlHandler(ExternalServiceConsoleHandler, TRUE);
+
+	Restore_after_reboot();
+	monitorSessions();
+
+	return 0;
+}
+
 void UltraVNCService::disconnect_remote_sessions()
 {
 	typedef BOOLEAN(WINAPI* pWinStationConnect) (HANDLE, ULONG, ULONG, PCWSTR, ULONG);
@@ -979,7 +1022,7 @@ void UltraVNCService::monitorSessions() {
 	testevent2[1] = hEventcad;
 
 	//IsAnyRDPSessionActive()
-	while (!IsShutdown && serviceStatus.dwCurrentState == SERVICE_RUNNING) {
+	while (isRunning()) {
 		DWORD dwEvent;
 		if (RDPMODE)
 			dwEvent = WaitForMultipleObjects(3, testevent3, FALSE, 1000);
