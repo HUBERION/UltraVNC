@@ -98,6 +98,12 @@ public:
 	static int start_service(char* cmd);
 	static int install_service(void);
 	static int uninstall_service(void);
+	// Runs the session manager (monitorSessions) without the Windows Service
+	// Control Manager, for a standalone LOCAL SYSTEM process such as a scheduled
+	// task. This is NOT redundant with the SCM path (start_service/service_main):
+	// StartServiceCtrlDispatcher only succeeds when the process is launched by
+	// the SCM, so this is the only entry point that can run the session manager
+	// outside a registered service. The core logic is shared via monitorSessions().
 	static int run_as_external_service(void);
 	static void requestShutdown() { IsShutdown = true; if (hEndSessionEvent) SetEvent(hEndSessionEvent); if (hEvent) SetEvent(hEvent); }
 
