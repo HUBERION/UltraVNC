@@ -906,6 +906,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine2
 			{
 				//Run session management from an external LocalSystem process (no SCM)
 #ifndef SC_20
+				vnclog.SetPath(settings->getDebugPath());
+				vnclog.SetLevel(settings->getDebugLevel());
+				vnclog.SetMode(settings->getDebugMode());
+				vnclog.SetFile();
 				UltraVNCService::run_as_external_service();
 #endif
 				return return2(0);
