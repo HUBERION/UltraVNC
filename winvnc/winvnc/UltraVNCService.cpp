@@ -865,6 +865,15 @@ static BOOL WINAPI ExternalServiceConsoleHandler(DWORD ctrlType) {
 
 int UltraVNCService::run_as_external_service(void)
 {
+	// Entry point for "-service_run_from_external": runs the session manager as a
+	// plain LOCAL SYSTEM process (e.g. a scheduled task) instead of a registered
+	// Windows service. The SCM path (service_main, reached via start_service /
+	// StartServiceCtrlDispatcher) cannot be used here because
+	// StartServiceCtrlDispatcher only connects when the process was started by the
+	// SCM. The actual work (Restore_after_reboot + monitorSessions) is shared with
+	// service_main, so only the lifecycle wrapper below (console Ctrl handler and
+	// the isRunningExternal flag in place of SCM status reporting) is specific to
+	// this path - there is no duplicated functionality.
 	SetDllDirectory(TEXT(""));
 	SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32);
 
