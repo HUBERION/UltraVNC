@@ -10,7 +10,10 @@ on:
 jobs:
   build-winvnc-x64:
     name: Build winvnc Release x64
-    runs-on: windows-latest
+    # Pinned to the VS2022 image. 'windows-latest' rolled to a VS2026-based
+    # image that does not ship ATL (atlbase.h) for the v143 toolset this
+    # project pins, breaking the winvnc build.
+    runs-on: windows-2022
 
     steps:
       - name: Checkout repository
@@ -69,7 +72,8 @@ jobs:
 
   build-winvnc-x86:
     name: Build winvnc Release Win32
-    runs-on: windows-latest
+    # Pinned to the VS2022 image (see note on the x64 job above).
+    runs-on: windows-2022
 
     steps:
       - name: Checkout repository
