@@ -1026,13 +1026,31 @@ void UltraVNCService::monitorSessions() {
 	hEndSessionEvent = CreateEvent(NULL, FALSE, FALSE, "Global\\EndSessionEvent");
 	hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(int), "Global\\SessionUltraPreConnect");
 	if (hMapFile)data = MapViewOfFile(hMapFile, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
-	Sleep(3000);
+	// wait_for_existing_process() above already blocks until any prior tray/server
+	// instance has signaled out, so we only need a short settle for the shared kernel
+	// objects (events / file mapping) instead of a full 3s guess. The old fixed
+	// Sleep(3000) was the dominant cost of -service_run_from_external startup.
+	Sleep(250);
 	int* a = (int*)data;
 	testevent3[0] = hEndSessionEvent;
 	testevent3[1] = hEventcad;
 	testevent3[2] = hEventPreConnect;
 	testevent2[0] = hEndSessionEvent;
 	testevent2[1] = hEventcad;
+
+	// Launch the server into the active console session immediately instead of
+	// waiting for the first WaitForMultipleObjects(...,1000) iteration to time out
+	// (which previously cost a full extra second before the very first launch). The
+	// monitor loop below then only restarts/follows the process. Done only for the
+	// common non-RDP path; the RDP path keeps its original first-run handling inside
+	// the WAIT_TIMEOUT branch.
+	if (!RDPMODE && !IsShutdown) {
+		dwSessionId = WTSGetActiveConsoleSessionId();
+		if (dwSessionId != 0xFFFFFFFF) {
+			LaunchProcessWin(dwSessionId, false, false);
+			OlddwSessionId = dwSessionId;
+		}
+	}
 
 	//IsAnyRDPSessionActive()
 	while (isRunning()) {
