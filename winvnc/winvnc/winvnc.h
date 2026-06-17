@@ -94,6 +94,7 @@ const char winvncSecurityEditor[]			= "-securityeditor";
 const char winvncKill[]						= "-kill";
 const char winvncSetAccessView[]			= "-setaccess_view";
 const char winvncSetAccessFull[]			= "-setaccess_full";
+const char winvncConsentPending[]			= "-consentpending";
 const char winvncopenhomepage[]				= "-openhomepage";
 const char winvncopenforum[]				= "-openforum";
 const char winvncopengithub[]				= "-opengithub";

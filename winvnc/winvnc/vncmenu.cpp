@@ -70,6 +70,8 @@ void Open_openhub();
 
 //HACK to use name in autoreconnect from service with dyn dns
 extern char dnsname[255];
+// XEOX: cleared when the user grants access, so later viewers are no longer withheld. Defined in winvnc.cpp.
+extern bool g_consentPending;
 
 HMENU vncMenu::m_hmenu = NULL;
 char vncMenu::exe_file_name[MAX_PATH]="";
@@ -972,14 +974,20 @@ LRESULT CALLBACK vncMenu::WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lP
 		// the matching WM_COMMAND to the running tray window.
 		case ID_SETACCESS_VIEW:
 			vnclog.Print(LL_INTINFO, VNCLOG("XEOX ID_SETACCESS_VIEW: disabling remote inputs (view-only)\n"));
-			if (_this->m_server)
-				_this->m_server->EnableRemoteInputs(FALSE);
+			g_consentPending = false;
+			if (_this->m_server) {
+				_this->m_server->ReleaseConsentBlocks();
+				_this->m_server->SetRemoteInputsForce(FALSE);
+			}
 			break;
 
 		case ID_SETACCESS_FULL:
 			vnclog.Print(LL_INTINFO, VNCLOG("XEOX ID_SETACCESS_FULL: enabling remote inputs (full control)\n"));
-			if (_this->m_server)
-				_this->m_server->EnableRemoteInputs(TRUE);
+			g_consentPending = false;
+			if (_this->m_server) {
+				_this->m_server->ReleaseConsentBlocks();
+				_this->m_server->SetRemoteInputsForce(TRUE);
+			}
 			break;
 #ifndef SC_20
 		case ID_REBOOTSAFEMODE:

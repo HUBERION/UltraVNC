@@ -179,6 +179,13 @@ public:
 	virtual void KillSockConnect();
 	virtual void SetAutoPortSelect(const BOOL autoport);
 	virtual void EnableRemoteInputs(BOOL enable);
+	// XEOX: force the remote input state on all connected clients, bypassing the one-way latch in
+	// vncClient::EnableKeyboard/Pointer/Gii so a view-only -> full-control switch takes effect on
+	// a live connection with no viewer reconnect.
+	virtual void SetRemoteInputsForce(BOOL enable);
+	// XEOX: release the consent-pending screen block on all connected clients (the screen becomes
+	// visible to the viewer once the user grants access).
+	virtual void ReleaseConsentBlocks();
 	virtual void EnableJapInput(BOOL enable);
 	virtual void ForceCursorShape(BOOL enable);
 	virtual void EnableUnicodeInput(BOOL enable);

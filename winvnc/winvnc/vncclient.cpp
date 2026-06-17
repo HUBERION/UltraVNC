@@ -430,6 +430,9 @@ vncClientUpdateThread::EnableUpdates(BOOL enable)
 }
 
 extern bool g_DesktopThread_running;
+// XEOX: when true a consent dialog is still pending, so newly connected viewers must not see the
+// screen until the user grants access. Defined in winvnc.cpp.
+extern bool g_consentPending;
 
 void*
 vncClientUpdateThread::run_undetached(void* arg)
@@ -2544,7 +2547,15 @@ vncClientThread::run(void* arg)
 
 	// UNLOCK INITIAL SETUP
 	// Initial negotiation is complete, so set the protocol ready flag
-	m_client->EnableProtocol();
+	// XEOX: if a consent dialog is still pending, keep the protocol disabled so the viewer connects
+	// but sees a blank screen. The block is released by ReleaseConsentBlock() once the user grants
+	// access (triggered from the -setaccess_view/-setaccess_full command).
+	if (g_consentPending) {
+		m_client->m_consentBlocked = true;
+		vnclog.Print(LL_INTINFO, VNCLOG("XEOX consent pending, withholding screen until consent\n"));
+	} else {
+		m_client->EnableProtocol();
+	}
 
 	// Add a fullscreen update to the client's update list
 	// sf@2002 - Scaling

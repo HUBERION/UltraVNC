@@ -65,6 +65,10 @@ char* g_szRepeaterHost = NULL;
 
 // sf@2007 - New shutdown order handling stuff (with uvnc_service)
 bool			fShutdownOrdered = false;
+// XEOX: when true, newly connected viewers are kept on a blank screen (the post-handshake
+// EnableProtocol is withheld) until the user grants access via -setaccess_view/-setaccess_full.
+// Set at startup from the -consentpending flag (only for AccessLevel.Ask) and cleared on consent.
+bool			g_consentPending = false;
 static HANDLE		hShutdownEvent = NULL;
 HANDLE		hShutdownEventcad = NULL;
 MMRESULT			mmRes;
@@ -960,6 +964,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine2
 			if (strncmp(&szCmdLine[i], winvncRunAsUserApp, strlen(winvncRunAsUserApp)) == 0)
 			{
 				// WinVNC is being run as a user-level program
+				// XEOX: start with screen sharing withheld until the user consents.
+				if (strstr(szCmdLine, winvncConsentPending) != NULL)
+					g_consentPending = true;
 				if (!Myinit(hInstance)) return return2(0);
 				int return2value = WinVNCAppMain();
 				return return2(return2value);

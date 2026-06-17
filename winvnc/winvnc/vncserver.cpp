@@ -1158,6 +1158,34 @@ vncServer::EnableRemoteInputs(BOOL enable)
 	}
 }
 
+// XEOX: force the remote input state on all connected clients, bypassing the one-way latch in
+// vncClient::EnableKeyboard/Pointer/Gii. Used by the explicit access-mode change command so that
+// switching from view-only back to full control takes effect live without a viewer reconnect.
+void
+vncServer::SetRemoteInputsForce(BOOL enable)
+{
+	settings->setEnableRemoteInputs(enable);
+	vncClientList::iterator i;
+	omni_mutex_lock l(m_clientsLock, 54);
+	for (i = m_authClients.begin(); i != m_authClients.end(); i++) {
+		GetClient(*i)->ForceEnableKeyboard(settings->getEnableRemoteInputs());
+		GetClient(*i)->ForceEnablePointer(settings->getEnableRemoteInputs());
+		GetClient(*i)->ForceEnableGii(settings->getEnableRemoteInputs());
+	}
+}
+
+// XEOX: release the consent-pending screen block on all connected clients. Called once the user
+// grants access; each blocked client then receives a full framebuffer update.
+void
+vncServer::ReleaseConsentBlocks()
+{
+	vncClientList::iterator i;
+	omni_mutex_lock l(m_clientsLock, 54);
+	for (i = m_authClients.begin(); i != m_authClients.end(); i++) {
+		GetClient(*i)->ReleaseConsentBlock();
+	}
+}
+
 void
 vncServer::EnableJapInput(BOOL enable)
 {

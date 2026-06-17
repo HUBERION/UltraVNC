@@ -223,6 +223,26 @@ public:
 			m_GiiEnabled = enable;
 	};
 
+	// XEOX: unconditional input setters. The latching EnableKeyboard/Pointer/Gii above can only
+	// turn input OFF (they ignore the call once the flag is false), which means a view-only ->
+	// full-control switch on a live connection never re-enabled input without a viewer reconnect.
+	// These force the exact state and are used by the explicit access-mode change command.
+	virtual void ForceEnableKeyboard(BOOL enable) { m_keyboardenabled = enable ? true : false; };
+	virtual void ForceEnablePointer(BOOL enable) { m_pointerenabled = enable ? true : false; };
+	virtual void ForceEnableGii(BOOL enable) { m_GiiEnabled = enable ? true : false; };
+
+	// XEOX: release a consent-pending screen block. The client starts with the protocol disabled
+	// (m_disable_protocol == 1); when consent is pending we withhold the usual post-handshake
+	// EnableProtocol, so the viewer connects but sees a blank screen. This releases it once the
+	// user grants access, causing a full framebuffer update to be sent.
+	virtual void ReleaseConsentBlock()
+	{
+		if (m_consentBlocked) {
+			m_consentBlocked = false;
+			EnableProtocol();
+		}
+	};
+
 	virtual void EnableJap(bool enable) {m_jap = enable;};
 	virtual void ForceCursorShape(bool enable) { m_ForceCursorShape = enable; };
 	virtual void EnableUnicode(bool enable) {m_unicode = enable;};
@@ -478,6 +498,9 @@ protected:
 	bool			m_keyboardenabled = true;
 	bool			m_pointerenabled = true;
 	bool			m_GiiEnabled = true;
+	// XEOX: set when the viewer connected while a consent dialog was still pending, so its screen
+	// is withheld until the user grants access. See ReleaseConsentBlock().
+	bool			m_consentBlocked = false;
 	bool			m_jap;
 	bool			m_ForceCursorShape;
 	bool			m_unicode;
