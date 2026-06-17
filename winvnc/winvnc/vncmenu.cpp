@@ -966,6 +966,21 @@ LRESULT CALLBACK vncMenu::WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lP
 			PostMessage(hwnd, WM_CLOSE, 0, 0);
 		}
 			break;
+
+		// XEOX: live access-mode change (no reconnect). Triggered by
+		// "winvnc.exe -setaccess_view" / "-setaccess_full" which PostMessage
+		// the matching WM_COMMAND to the running tray window.
+		case ID_SETACCESS_VIEW:
+			vnclog.Print(LL_INTINFO, VNCLOG("XEOX ID_SETACCESS_VIEW: disabling remote inputs (view-only)\n"));
+			if (_this->m_server)
+				_this->m_server->EnableRemoteInputs(FALSE);
+			break;
+
+		case ID_SETACCESS_FULL:
+			vnclog.Print(LL_INTINFO, VNCLOG("XEOX ID_SETACCESS_FULL: enabling remote inputs (full control)\n"));
+			if (_this->m_server)
+				_this->m_server->EnableRemoteInputs(TRUE);
+			break;
 #ifndef SC_20
 		case ID_REBOOTSAFEMODE:
 		{

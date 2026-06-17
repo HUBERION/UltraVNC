@@ -636,6 +636,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine2
 				return return2(0);
 			}
 
+			// XEOX: live access-mode change without reconnect. Posts the matching
+			// WM_COMMAND to the running tray window, which calls
+			// vncServer::EnableRemoteInputs() on all connected clients.
+			if (strncmp(&szCmdLine[i], winvncSetAccessView, strlen(winvncSetAccessView)) == 0)
+			{
+				HWND hservwnd = postHelper::FindWinVNCWindow(false);
+				if (hservwnd != NULL)
+					PostMessage(hservwnd, WM_COMMAND, ID_SETACCESS_VIEW, 0);
+				return return2(0);
+			}
+
+			if (strncmp(&szCmdLine[i], winvncSetAccessFull, strlen(winvncSetAccessFull)) == 0)
+			{
+				HWND hservwnd = postHelper::FindWinVNCWindow(false);
+				if (hservwnd != NULL)
+					PostMessage(hservwnd, WM_COMMAND, ID_SETACCESS_FULL, 0);
+				return return2(0);
+			}
+
 			if (strncmp(&szCmdLine[i], winvncopenhomepage, strlen(winvncopenhomepage)) == 0)
 			{
 				Open_homepage();

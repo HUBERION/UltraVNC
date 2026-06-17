@@ -422,6 +422,8 @@
 #define ID_WINVNC_WARNIN                32857
 #define ID_WVNC                         32858
 #define ID_CLOSE_SILENT                 32859
+#define ID_SETACCESS_VIEW               32906
+#define ID_SETACCESS_FULL               32907
 #define ID_COPY_BRIDGE_CODE             32860
 #define ID_TRAY_COPYBRIDGECODE          32861
 #define ID_Menu                         32862
@@ -475,7 +477,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        211
-#define _APS_NEXT_COMMAND_VALUE         32906
+#define _APS_NEXT_COMMAND_VALUE         32908
 #define _APS_NEXT_CONTROL_VALUE         1294
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
