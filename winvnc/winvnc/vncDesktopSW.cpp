@@ -32,8 +32,8 @@ rfb::Rect vncDesktop::GetSize()
 		return rfb::Rect(0, 0, m_scrinfo.framebufferWidth, m_scrinfo.framebufferHeight);
 	} else {
 		if (show_all_monitors) {
-			int nWidth = mymonitor[MULTI_MON_PRIMARY].Width;
-			int nHeight = mymonitor[MULTI_MON_PRIMARY].Height;				
+			int nWidth = mymonitor[MULTI_MON_ALL].Width; // XEOX: full virtual desktop (was PRIMARY; 4+ monitors blacked out)
+			int nHeight = mymonitor[MULTI_MON_ALL].Height;				
 			switch (nr_monitors) {
 				case 2:
 					nWidth = m_Cliprect.br.x;
