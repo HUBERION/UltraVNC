@@ -2233,6 +2233,24 @@ void vncDesktop::SetMonitor(int nbr)
 		m_current_monitor = nbr;
 }
 
+// XEOX: complete runtime monitor switch driven by the agent ("-setmonitor N").
+// SetMonitor alone only changes m_current_monitor; the shared framebuffer size keys
+// off the all-monitors flag, and the desktop thread re-initialises when either the
+// all-monitors flag or the current monitor changes (see vncDesktopThread). So set both.
+void vncDesktop::SelectMonitor(int nbr)
+{
+	if (nbr >= MULTI_MON_ALL) {
+		// Share the whole virtual desktop (all monitors).
+		m_buffer.SetAllMonitors(true);
+		m_current_monitor = MULTI_MON_ALL;
+	}
+	else if (nbr > -1 && nbr <= nr_monitors) {
+		// Share a single monitor (primary = 0, others 1..N).
+		m_buffer.SetAllMonitors(false);
+		m_current_monitor = nbr;
+	}
+}
+
 // SW
 void vncDesktop::SetSW(int x, int y)
 {

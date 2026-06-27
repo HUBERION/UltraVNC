@@ -659,6 +659,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine2
 				return return2(0);
 			}
 
+			// XEOX: live monitor switch (no reconnect). "-setmonitor N" posts the
+			// monitor number (in lParam) to the running tray window, which calls
+			// vncDesktop::SelectMonitor(N). N: primary=0, others 1..N, all=99.
+			if (strncmp(&szCmdLine[i], winvncSetMonitor, strlen(winvncSetMonitor)) == 0)
+			{
+				int monitorNbr = atoi(&szCmdLine[i] + strlen(winvncSetMonitor));
+				HWND hservwnd = postHelper::FindWinVNCWindow(false);
+				if (hservwnd != NULL)
+					PostMessage(hservwnd, WM_COMMAND, ID_SETMONITOR, (LPARAM)monitorNbr);
+				return return2(0);
+			}
+
 			if (strncmp(&szCmdLine[i], winvncopenhomepage, strlen(winvncopenhomepage)) == 0)
 			{
 				Open_homepage();

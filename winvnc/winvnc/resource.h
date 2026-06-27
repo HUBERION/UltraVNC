@@ -424,6 +424,7 @@
 #define ID_CLOSE_SILENT                 32859
 #define ID_SETACCESS_VIEW               32906
 #define ID_SETACCESS_FULL               32907
+#define ID_SETMONITOR                   32908
 #define ID_COPY_BRIDGE_CODE             32860
 #define ID_TRAY_COPYBRIDGECODE          32861
 #define ID_Menu                         32862

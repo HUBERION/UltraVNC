@@ -225,6 +225,10 @@ public:
 	void SetDisableInput();
 	void SetSW(int x,int y);
 	void SetMonitor(int nbr);
+	// XEOX: complete runtime monitor switch (sets both the all-monitors flag and the
+	// current monitor so the desktop thread re-initialises). nbr 0..nr_monitors = that
+	// single monitor; nbr >= MULTI_MON_ALL (99) = all monitors.
+	void SelectMonitor(int nbr);
 	//hook selection
 	BOOL m_hookdriver;
 	void SethookMechanism(BOOL hookall,BOOL hookdriver);

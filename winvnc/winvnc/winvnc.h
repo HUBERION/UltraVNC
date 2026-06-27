@@ -94,6 +94,9 @@ const char winvncSecurityEditor[]			= "-securityeditor";
 const char winvncKill[]						= "-kill";
 const char winvncSetAccessView[]			= "-setaccess_view";
 const char winvncSetAccessFull[]			= "-setaccess_full";
+// XEOX: live monitor switch (no reconnect). "-setmonitor N" shares monitor N
+// (primary=0, others 1..N) or all monitors (N=99); driven by the agent.
+const char winvncSetMonitor[]				= "-setmonitor";
 const char winvncConsentPending[]			= "-consentpending";
 const char winvncopenhomepage[]				= "-openhomepage";
 const char winvncopenforum[]				= "-openforum";

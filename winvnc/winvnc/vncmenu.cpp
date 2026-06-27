@@ -27,6 +27,7 @@
 // Header
 
 #include "vncmenu.h"
+#include "vncdesktop.h" // XEOX: full vncDesktop definition for SelectMonitor() (ID_SETMONITOR)
 #include "HideDesktop.h"
 #include "common/win32_helpers.h"
 #include "vncOSVersion.h"
@@ -987,6 +988,18 @@ LRESULT CALLBACK vncMenu::WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lP
 			if (_this->m_server) {
 				_this->m_server->ReleaseConsentBlocks();
 				_this->m_server->SetRemoteInputsForce(TRUE);
+			}
+			break;
+
+		// XEOX: live monitor switch. "winvnc.exe -setmonitor N" posts ID_SETMONITOR with
+		// the monitor number in lParam; share that single monitor (primary=0, others 1..N)
+		// or all monitors (N=99) without a reconnect.
+		case ID_SETMONITOR:
+			vnclog.Print(LL_INTINFO, VNCLOG("XEOX ID_SETMONITOR: switching shared monitor to %d\n"), (int)lParam);
+			if (_this->m_server) {
+				vncDesktop *desktop = _this->m_server->GetDesktopPointer();
+				if (desktop != NULL)
+					desktop->SelectMonitor((int)lParam);
 			}
 			break;
 #ifndef SC_20
