@@ -374,9 +374,27 @@ DesktopWndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 		}
 		else
 		{
-				_this->m_displaychanged = TRUE;
-				_this->m_hookdriver=false;
-				vnclog.Print(LL_INTERR, VNCLOG("Resolution switch detected, driver NOT active\n"));
+				// XEOX: only treat this WM_DISPLAYCHANGE as a real change when the virtual
+				// desktop SIZE actually differs from what we last initialised with. On a
+				// MULTI-monitor host the OS broadcasts a same-size WM_DISPLAYCHANGE to this
+				// freshly-created sink window right after the first Startup() already captured
+				// the virtual desktop; forcing a full desktop Shutdown+Startup on that spurious
+				// broadcast caused a ~10-15s black screen on every multi-monitor connect
+				// (single-monitor never receives this broadcast, hence no delay there). A
+				// genuine resolution/topology change still differs here and still resets.
+				// mymonitor[MULTI_MON_ALL].Width/Height are filled from SM_C*VIRTUALSCREEN in
+				// Checkmonitors() (host byte order, uncapped), matching GetSystemMetrics below.
+				if (GetSystemMetrics(SM_CXVIRTUALSCREEN) != _this->mymonitor[MULTI_MON_ALL].Width ||
+					GetSystemMetrics(SM_CYVIRTUALSCREEN) != _this->mymonitor[MULTI_MON_ALL].Height)
+				{
+					_this->m_displaychanged = TRUE;
+					_this->m_hookdriver=false;
+					vnclog.Print(LL_INTERR, VNCLOG("Resolution switch detected, driver NOT active\n"));
+				}
+				else
+				{
+					vnclog.Print(LL_INTERR, VNCLOG("XEOX: WM_DISPLAYCHANGE same virtual size, ignored (no reset)\n"));
+				}
 		}
 		return 0;
 
