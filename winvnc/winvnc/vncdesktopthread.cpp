@@ -1219,7 +1219,17 @@ vncDesktopThread::run_undetached(void *arg)
 										if (!initialupdate) {
 											m_server->InitialUpdate(true);
 											initialupdate=true;
-											m_desktop->m_old_monitor = m_desktop->m_old_monitor == MULTI_MON_ALL ? 1 : MULTI_MON_ALL;
+											// XEOX: this flip forces a one-shot full desktop re-init (Shutdown+Startup)
+											// on the next handle_display_change pass - an upstream 2018 "hang by
+											// secondary=1" workaround for the MIRROR-DRIVER capture path. On the
+											// GDI/software path (m_screenCapture==NULL, [poll] EnableDriver=0) that
+											// hang does not occur, so the forced re-init is pure redundant work whose
+											// cost scales with the multi-monitor framebuffer size - it was the per-
+											// monitor 4+ connect slowdown (one extra Sleep(1000) + a second full
+											// capture/encode of the whole virtual desktop). Keep it ONLY when a driver
+											// capture object is active.
+											if (m_desktop->m_screenCapture)
+												m_desktop->m_old_monitor = m_desktop->m_old_monitor == MULTI_MON_ALL ? 1 : MULTI_MON_ALL;
 										}
 										updates.add_changed(changedrgn);
 										updates.add_cached(cachedrgn);
