@@ -90,7 +90,13 @@ vncDesktop::StartInitWindowthread()
 				if (settings->getEnableWin8Helper())
 					keybd_initialize();
 				InitWindowThreadh=CreateThread(NULL,0,InitWindowThread,this,0,&pumpID);
+				// XEOX: measure how long the connect-blocking init wait actually
+				// takes. With the early SetEvent in InitWindow this should be a
+				// few ms; if a log ever shows ~10000 ms / WAIT_TIMEOUT here the
+				// stall moved elsewhere in InitWindow and needs another look.
+				DWORD __xeoxWaitStart = GetTickCount();
 				DWORD status=WaitForSingleObject(restart_event,10000);
+				vnclog.Print(LL_INTERR, VNCLOG("XEOX: InitWindow restart_event wait = %u ms (status %u)\n"), GetTickCount() - __xeoxWaitStart, status);
 				if (status==WAIT_TIMEOUT)
 				{
 					vnclog.Print(LL_INTINFO, VNCLOG("ERROR: initwindowthread failed to start \n"));
@@ -530,6 +536,21 @@ vncDesktop::InitWindow()
 	SetTimer(m_hwnd,1001,1000,NULL);
 	// Set the "this" pointer for the window
     helper::SafeSetWindowUserData(m_hwnd, (LONG_PTR)this);
+
+	// XEOX: Signal readiness as soon as the sink window exists and the input
+	// desktop is selected - that is all the connect-blocking Init() path
+	// (StartInitWindowthread -> WaitForSingleObject(restart_event,10000)) needs.
+	// Previously restart_event was only SetEvent()'d at the bottom of InitWindow,
+	// AFTER SetClipboardViewer() and the hook-DLL LoadLibrary() calls below. In
+	// session-0 SYSTEM context SetClipboardViewer() broadcasts synchronously to
+	// the clipboard-viewer chain and can stall ~10s (SendMessage timeout per
+	// stale chain window), which delayed the whole connect and first frame -
+	// the operator saw a black screen for ~10-15s on every connect. The
+	// clipboard/hook setup below still runs; it just no longer blocks the
+	// connect path. restart_event is manual-reset, so the later SetEvent at the
+	// end of InitWindow is a harmless no-op.
+	SetEvent(restart_event);
+	vnclog.Print(LL_INTERR, VNCLOG("XEOX: sink window ready, restart_event signalled early (pre-clipboard/hook)\n"));
 
 	// Enable clipboard hooking
 	// adzm - 2010-07 - Fix clipboard hangs
